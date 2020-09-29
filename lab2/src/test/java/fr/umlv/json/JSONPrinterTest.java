@@ -8,7 +8,7 @@ public class JSONPrinterTest {
 
     @Test
     void person() {
-        var person = new Person("John", "Doe");
+        var person = new JSONPrinter.Person("John", "Doe");
         assertEquals("""
                 {
                   "first-name":"John",
@@ -18,7 +18,7 @@ public class JSONPrinterTest {
 
     @Test
     void alien() {
-        var alien = new Alien(100, "Saturn");
+        var alien = new JSONPrinter.Alien(100, "Saturn");
         assertEquals("""
                 {
                   "age":100,
@@ -33,13 +33,13 @@ public class JSONPrinterTest {
 
     @Test
     void parsePerson() {
-        var person = new Person("John", "Doe");
+        var person = new JSONPrinter.Person("John", "Doe");
         assertDoesNotThrow(() -> IncompleteJSONParser.parse(JSONPrinter.toJSON(person)));
     }
 
     @Test
     void parseAlien() {
-        var alien = new Alien(100, "Saturn");
+        var alien = new JSONPrinter.Alien(100, "Saturn");
         assertDoesNotThrow(() -> IncompleteJSONParser.parse(JSONPrinter.toJSON(alien)));
     }
 }
