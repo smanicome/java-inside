@@ -11,8 +11,8 @@ public class JSONPrinterTest {
         var person = new Person("John", "Doe");
         assertEquals("""
                 {
-                  "Prénom":"John",
-                  "Nom":"Doe"
+                  "first-name":"John",
+                  "last-name":"Doe"
                 }""", JSONPrinter.toJSON(person));
     }
 
