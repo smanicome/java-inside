@@ -40,7 +40,7 @@ public class JSONPrinter {
             String jsonLine = "  \"";
 
             if(recordComponent.isAnnotationPresent(JSONProperty.class)) {
-                jsonLine += recordComponent.getAnnotation(JSONProperty.class).value();
+                jsonLine += recordComponent.getName().replace('_', '-');
             } else {
                 jsonLine += recordComponent.getName();
             }
