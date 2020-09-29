@@ -8,7 +8,32 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.Objects.requireNonNull;
+
 public class JSONPrinter {
+    private static final ClassValue<RecordComponent[]> recordComponentsCacher = new ClassValue<RecordComponent[]>() {
+        @Override
+        protected RecordComponent[] computeValue(Class<?> type) {
+            return type.getRecordComponents();
+        }
+    };
+
+    public record Person(@JSONProperty String first_name, @JSONProperty String last_name) {
+        public Person {
+            requireNonNull(first_name);
+            requireNonNull(last_name);
+        }
+    }
+
+    public record Alien(int age, String planet) {
+        public Alien {
+            if (age < 0) {
+                throw new IllegalArgumentException("negative age");
+            }
+            requireNonNull(planet);
+        }
+    }
+
     /*public static String toJSON(fr.umlv.json.Person person) {
         return """
       {
@@ -30,34 +55,19 @@ public class JSONPrinter {
     public static String toJSON(Record record) {
         Objects.requireNonNull(record);
 
-        Stream<RecordComponent> stream = Arrays.stream(record.getClass().getRecordComponents());
+        Stream<RecordComponent> stream = Arrays.stream(recordComponentsCacher.get(record.getClass()));
+
         return stream.map(elt -> invokeAccessor(record, elt))
             .collect(Collectors.joining(",\n", "{\n", "\n}"));
     }
 
     private static String invokeAccessor(Record record, RecordComponent recordComponent) {
+        Objects.requireNonNull(record);
+        Objects.requireNonNull(recordComponent);
+        Object value;
+
         try {
-            String jsonLine = "  \"";
-
-            if(recordComponent.isAnnotationPresent(JSONProperty.class)) {
-                jsonLine += recordComponent.getName().replace('_', '-');
-            } else {
-                jsonLine += recordComponent.getName();
-            }
-
-            jsonLine += "\":";
-
-            Object value = recordComponent.getAccessor().invoke(record);
-            if(recordComponent.getAccessor().invoke(record) instanceof String) {
-                jsonLine += "\"";
-                jsonLine += value.toString();
-                jsonLine += "\"";
-            } else {
-                jsonLine += recordComponent.getAccessor().invoke(record).toString();
-            }
-
-            return jsonLine;
-
+            value = recordComponent.getAccessor().invoke(record);
         } catch (IllegalAccessException e) {
             throw new IllegalAccessError();
         } catch (InvocationTargetException e) {
@@ -72,6 +82,27 @@ public class JSONPrinter {
 
             throw new UndeclaredThrowableException(cause);
         }
+
+        String jsonLine = "  \"";
+
+
+        if(recordComponent.isAnnotationPresent(JSONProperty.class)) {
+            jsonLine += recordComponent.getName().replace('_', '-');
+        } else {
+            jsonLine += recordComponent.getName();
+        }
+
+        jsonLine += "\":";
+
+        if(value instanceof String) {
+            jsonLine += "\"";
+            jsonLine += value.toString();
+            jsonLine += "\"";
+        } else {
+            jsonLine += value.toString();
+        }
+
+        return jsonLine;
     }
 
     public static void main(String[] args) {
