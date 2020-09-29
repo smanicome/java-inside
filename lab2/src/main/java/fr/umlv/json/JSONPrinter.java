@@ -4,17 +4,23 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.RecordComponent;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
 
 public class JSONPrinter {
-    private static final ClassValue<RecordComponent[]> recordComponentsCacher = new ClassValue<RecordComponent[]>() {
+    private static final ClassValue<List<Function<Record, String>>> JSONLineCacher = new ClassValue<List<Function<Record, String>>>() {
         @Override
-        protected RecordComponent[] computeValue(Class<?> type) {
-            return type.getRecordComponents();
+        protected List<Function<Record, String>> computeValue(Class<?> type) {
+            return Arrays.stream(type.getRecordComponents())
+                .<Function<Record, String>>map(component -> {
+                    return (Record r) -> buildJSONLine(r, component);
+                })
+                .collect(Collectors.toList());
         }
     };
 
@@ -55,13 +61,12 @@ public class JSONPrinter {
     public static String toJSON(Record record) {
         Objects.requireNonNull(record);
 
-        Stream<RecordComponent> stream = Arrays.stream(recordComponentsCacher.get(record.getClass()));
+        var stream = JSONLineCacher.get(record.getClass());
 
-        return stream.map(elt -> invokeAccessor(record, elt))
-            .collect(Collectors.joining(",\n", "{\n", "\n}"));
+        return stream.stream().map(fun -> fun.apply(record)).collect(Collectors.joining(",\n", "{\n", "\n}"));
     }
 
-    private static String invokeAccessor(Record record, RecordComponent recordComponent) {
+    private static String buildJSONLine(Record record, RecordComponent recordComponent) {
         Objects.requireNonNull(record);
         Objects.requireNonNull(recordComponent);
         Object value;
@@ -84,7 +89,6 @@ public class JSONPrinter {
         }
 
         String jsonLine = "  \"";
-
 
         if(recordComponent.isAnnotationPresent(JSONProperty.class)) {
             jsonLine += recordComponent.getName().replace('_', '-');
