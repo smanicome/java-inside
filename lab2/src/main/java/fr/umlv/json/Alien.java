@@ -1,3 +1,5 @@
+package fr.umlv.json;
+
 import static java.util.Objects.requireNonNull;
 
 public record Alien(int age, String planet) {

@@ -1,13 +1,15 @@
+package fr.umlv.json;
+
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.lang.reflect.RecordComponent;
+import java.lang.reflect.UndeclaredThrowableException;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class JSONPrinter {
-    /*public static String toJSON(Person person) {
+    /*public static String toJSON(fr.umlv.json.Person person) {
         return """
       {
         "firstName": "%s",
@@ -16,7 +18,7 @@ public class JSONPrinter {
       """.formatted(person.firstName(), person.lastName());
     }
 
-    public static String toJSON(Alien alien) {
+    public static String toJSON(fr.umlv.json.Alien alien) {
         return """
       {
         "age": %s,
@@ -29,17 +31,40 @@ public class JSONPrinter {
         Objects.requireNonNull(record);
 
         Stream<RecordComponent> stream = Arrays.stream(record.getClass().getRecordComponents());
-        return stream.map(elt -> invokeAccessor(record, elt))
-            .collect(Collectors.joining(","));
+        return "{\n" + stream.map(elt -> invokeAccessor(record, elt))
+            .collect(Collectors.joining(",\n")) + "\n}";
     }
 
     private static String invokeAccessor(Record record, RecordComponent recordComponent) {
         try {
-            return recordComponent.getAccessor().invoke(record).toString();
+            String jsonLine = "  \"";
+            jsonLine += recordComponent.getName();
+            jsonLine += "\":";
+
+            Object value = recordComponent.getAccessor().invoke(record);
+            if(recordComponent.getAccessor().invoke(record) instanceof String) {
+                jsonLine += "\"";
+                jsonLine += value.toString();
+                jsonLine += "\"";
+            } else {
+                jsonLine += recordComponent.getAccessor().invoke(record).toString();
+            }
+
+            return jsonLine;
+
         } catch (IllegalAccessException e) {
             throw new IllegalAccessError();
         } catch (InvocationTargetException e) {
-            throw new RuntimeException(e);
+            Throwable cause = e.getCause();
+
+            if(cause instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            }
+            if(cause instanceof Error error) {
+                throw error;
+            }
+
+            throw new UndeclaredThrowableException(cause);
         }
     }
 
