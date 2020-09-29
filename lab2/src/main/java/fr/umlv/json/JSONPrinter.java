@@ -31,14 +31,20 @@ public class JSONPrinter {
         Objects.requireNonNull(record);
 
         Stream<RecordComponent> stream = Arrays.stream(record.getClass().getRecordComponents());
-        return "{\n" + stream.map(elt -> invokeAccessor(record, elt))
-            .collect(Collectors.joining(",\n")) + "\n}";
+        return stream.map(elt -> invokeAccessor(record, elt))
+            .collect(Collectors.joining(",\n", "{\n", "\n}"));
     }
 
     private static String invokeAccessor(Record record, RecordComponent recordComponent) {
         try {
             String jsonLine = "  \"";
-            jsonLine += recordComponent.getName();
+
+            if(recordComponent.isAnnotationPresent(JSONProperty.class)) {
+                jsonLine += recordComponent.getAnnotation(JSONProperty.class).value();
+            } else {
+                jsonLine += recordComponent.getName();
+            }
+
             jsonLine += "\":";
 
             Object value = recordComponent.getAccessor().invoke(record);
